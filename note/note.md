@@ -154,6 +154,109 @@ $S \to E, E \to aEb | \epsilon$
 
 ### 汇编
 
+~~~bash
+g++ -c main.s -o main.o
+~~~
+
+汇编这一步将编译器生成的中间代码（汇编代码）翻译为机器码（一种包含机器指令的二进制格式文件），但尚未完成链接。
+
+.o 生成的文件不是人类可读的，但是如果你实在是好奇里面究竟有什么，可以在终端输入如下的指令：
+
+~~~bash
+objdump -d test.o
+~~~
+
+它会把机器码进行反汇编，输出的格式应该类似于：
+
+
+~~~
+test.o:     file format pe-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <main>:
+   0:   55                      push   %rbp
+   1:   48 89 e5                mov    %rsp,%rbp
+   4:   48 83 ec 30             sub    $0x30,%rsp
+   8:   e8 00 00 00 00          call   d <main+0xd>
+   d:   c7 45 fc 01 00 00 00    movl   $0x1,-0x4(%rbp)
+  14:   83 7d fc 01             cmpl   $0x1,-0x4(%rbp)
+  18:   75 16                   jne    30 <main+0x30>
+  1a:   48 8d 15 00 00 00 00    lea    0x0(%rip),%rdx        # 21 <main+0x21>
+  21:   48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 28 <main+0x28>
+  28:   48 89 c1                mov    %rax,%rcx
+  2b:   e8 00 00 00 00          call   30 <main+0x30>
+  30:   83 7d fc 02             cmpl   $0x2,-0x4(%rbp)
+  34:   75 18                   jne    4e <main+0x4e>
+  36:   48 8d 15 0b 00 00 00    lea    0xb(%rip),%rdx        # 48 <main+0x48>
+  3d:   48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 44 <main+0x44>
+  44:   48 89 c1                mov    %rax,%rcx
+  47:   e8 00 00 00 00          call   4c <main+0x4c>
+  4c:   eb 16                   jmp    64 <main+0x64>
+  4e:   48 8d 15 16 00 00 00    lea    0x16(%rip),%rdx        # 6b <main+0x6b>
+  55:   48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 5c <main+0x5c>
+  5c:   48 89 c1                mov    %rax,%rcx
+  5f:   e8 00 00 00 00          call   64 <main+0x64>
+  64:   b8 00 00 00 00          mov    $0x0,%eax
+  69:   48 83 c4 30             add    $0x30,%rsp
+  6d:   5d                      pop    %rbp
+  6e:   c3                      ret
+  6f:   90                      nop
+~~~
+
+
 ### 链接
+
+~~~bash
+g++ main.o foo.o -o program
+~~~
+
+链接将多个目标文件和库组织成一个完整的可执行文件或共享库。
+
+#### 静态链接
+
+~~~bash
+g++ main.o foo.o -o program
+~~~
+
+所有的代码在链接阶段合并成一个单独的大文件，运行的时候无需依赖外部文件库。
+
+- 优点：部署简单，运行稳定
+- 缺点：文件体积大，重复冗余，不利于更新
+
+#### 动态链接
+
+~~~bash
+g++ main.o -o program -lfoo
+~~~
+
+最终生成的可执行文件中包含对动态库的引用，例如 windows 中的 .dll 和 Linux 中的 .so
+
+- 优点：节省空间，多个程序可以共享库，易于更新
+
+- 缺点：运行的时候需要依赖外部库，存在 [依赖地狱](https://zh.wikipedia.org/wiki/%E7%9B%B8%E4%BE%9D%E6%80%A7%E5%9C%B0%E7%8B%B1)
+
+
+#### 静态库
+代码被复制到最终的可执行文件中
+
+~~~bash
+g++ -c math.cpp        # 编译成目标文件 math.o
+ar rcs libmath.a math.o  # 打包成静态库
+g++ main.cpp -L. -lmath -o main  # 链接静态库
+~~~
+rcs：这是一组参数，r代表 将 math.o 加入库中，c代表创建库文件，s代表生成符号索引。
+-L. 表示在当前目录下寻找库文件
+-lxxx 表示链接 libxxx.a
+
+
+#### 动态库
+可执行文件运行时加载库文件
+
+~~~bash
+g++ -fPIC -shared math.cpp -o libmath.so  # 创建动态库
+g++ main.cpp -L. -lmath -o main           # 链接动态库（运行时需要 libmath.so）
+~~~
 
 ### 管理大型项目的构建：Makefile 与 Cmake
