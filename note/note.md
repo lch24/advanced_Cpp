@@ -255,8 +255,10 @@ rcs：这是一组参数，r代表 将 math.o 加入库中，c代表创建库文
 可执行文件运行时加载库文件
 
 ~~~bash
-g++ -fPIC -shared math.cpp -o libmath.so  # 创建动态库
+g++ -fPIC -shared math.cpp -o libmath.dll  # 创建动态库
 g++ main.cpp -L. -lmath -o main           # 链接动态库（运行时需要 libmath.so）
 ~~~
+
+-fPIC 在 Linux 系统中用于生成可以在任意内存地址加载(位置无关代码)的共享库，对于 Windows系统不是必须的。
 
 ### 管理大型项目的构建：Makefile 与 Cmake
