@@ -262,3 +262,67 @@ g++ main.cpp -L. -lmath -o main           # 链接动态库（运行时需要 li
 -fPIC 在 Linux 系统中用于生成可以在任意内存地址加载(位置无关代码)的共享库，对于 Windows系统不是必须的。
 
 ### 管理大型项目的构建：Makefile 与 Cmake
+
+#### 大型项目的构建
+使用 g++ 构建项目时，在链接阶段 对源文件或目标文件的顺序有时有要求。例如，如果 firstFile.cpp 中定义了函数 foo，而 secondFile.cpp 中调用了该函数，那么链接命令中 firstFile.o 应出现在 secondFile.o 之后：
+~~~bash
+g++ secondFile.o firstFile.o -o program
+~~~
+
+这是因为早期的链接器按照文件顺序解析符号，若在调用点之前未找到符号定义，就会报错。
+
+此外，在构建大型项目时，由于源文件之间存在复杂的依赖关系（例如头文件修改会影响多个 .cpp 文件），手动判断哪些文件需要重新编译几乎不可能。使用 g++ 时通常只能粗暴地全量重新编译：
+
+~~~bash
+Measure-Command { g++ src/*.cpp -Iinclude -ftemplate-depth=11000 -o run.exe }
+~~~
+
+这种方式虽简单，但随着项目体积增大，将极大影响构建效率。
+
+#### Makefile
+
+因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
+
+因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
+
+Makefile：经典的自动化构建系统
+Make 是 Unix 系统中最常用的构建工具之一。通过编写 Makefile，开发者可以精确描述各个目标文件的依赖关系和构建规则。当某个源文件发生变动时，make 只会重新编译受影响的部分，而不是整个项目。
+
+例如，在一个包含多个源文件的项目中，如果只修改了 act.cpp，使用 make 时只会重新编译该文件及与之相关的目标文件，而不是所有 .cpp 文件。这种 增量编译 能显著缩短构建时间，尤其在包含上千个文件的大型工程中效果尤为明显。
+
+此外，Makefile 语法灵活，支持变量、条件判断、自动推导规则等机制，可以实现复杂的构建流程控制。
+
+然而，Makefile 的可读性较差（示例见下），在开发过程中一般不是手动编写的，而是由构建工具自动生成的。如 Cmake
+
+~~~makefile
+# 编译器和参数
+CXX := g++
+CXXFLAGS := -Iinclude -std=c++17 -Wall -ftemplate-depth=11000
+
+# 源文件和目标文件
+SRC := $(wildcard src/*.cpp)
+OBJ := $(SRC:.cpp=.o)
+
+# 最终可执行文件名
+TARGET := run.exe
+
+# 默认目标
+all: $(TARGET)
+
+# 链接
+$(TARGET): $(OBJ)
+	$(CXX) $(OBJ) -o $@
+
+# 编译每个 .cpp 为 .o
+src/%.o: src/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# 清理构建产物
+clean:
+	del /Q src\*.o $(TARGET) 2>nul || true
+
+# 伪目标，避免和文件重名
+.PHONY: all clean
+~~~
+
+#### CMake
