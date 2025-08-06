@@ -139,7 +139,6 @@ $S \to E, E \to aEb | \epsilon$
 
 <factor> ::= "(" <expr> ")"
           | number
-          | identifier
 ~~~
 
 消除由 if-else 悬挂引起的文法二义性
@@ -154,7 +153,77 @@ $S \to E, E \to aEb | \epsilon$
                   | "if" "(" <expr> ")" <matched_stmt> "else" <unmatched_stmt>
 ~~~
 
+#### 语义分析与中间代码生成
+##### 语义分析（Semantic Analysis）
+检查语义是否正确，确保程序含义合理
+常见检查内容：
+- 类型检查（int ≠ string）
+- 变量是否已声明
+- 函数参数匹配
+- 作用域合法性
+- 构建符号表（Symbol Table）
 
+~~~C++
+int a = 3 + "hello";
+~~~
+
+
+##### 中间代码生成（Intermediate Code Generation）
+将语义正确的代码转换为中间表示（IR）
+典型形式：三地址码（Three Address Code
+
+~~~C++
+// 源码：
+a = b + c * d;
+~~~
+~~~ini
+// 三地址码：
+t1 = c * d
+t2 = b + t1
+a = t2
+~~~
+#### 优化（Optimization）
+##### 目标：
+- 提高执行效率
+- 减少资源消耗
+
+##### 优化类型：
+- 中间代码优化（平台无关）
+- 目标代码优化（平台相关）
+
+##### 常见优化技术：
+
+| 优化名      | 示例前                     | 示例后                        |
+| -------- | ----------------------- | -------------------------- |
+| 常量折叠     | `x = 3 + 5;`            | `x = 8;`                   |
+| 死代码删除    | `int a = 5; return 1;`  | `return 1;`                |
+| 公共子表达式消除 | `a = b + c; d = b + c;` | `t = b + c; a = t; d = t;` |
+| 循环不变代码外提 | 在循环中重复计算                | 提前到循环外                     |
+| 函数内联     | `call foo()`            | 展开 `foo` 函数体               |
+
+
+![C++梗图](./assets/spiderman.jpg)
+
+#### 目标代码生成（Target Code Generation）
+##### 目标：
+将优化后的中间代码转换为平台相关的汇编代码或机器代码
+
+
+示例：
+三地址码：
+
+~~~ini
+t1 = c * d
+t2 = b + t1
+a = t2
+~~~
+对应 x86 汇编：
+~~~asm
+mov eax, [c]
+imul eax, [d]
+add eax, [b]
+mov [a], eax
+~~~
 
 ### 汇编
 
@@ -274,8 +343,9 @@ g++ main.cpp -L. -lmath -o main           # 链接动态库（运行时需要 li
 ~~~bash
 # 编译动态库（Windows 下生成 .dll，Linux 下生成 .so）
 g++ -fPIC -shared src/behavior.cpp -o libbehavior.so   # Linux
+g++ -fPIC -shared src/act.cpp -o libact.so   # Linux
 # 编译主程序并链接动态库
-g++ src/run.cpp -o run.exe -Iinclude -L. -lbehavior
+g++ src/run.cpp -Iinclude -o run -L. -lbehavior -Wl,-rpath=.
 ~~~
 
 
@@ -287,7 +357,6 @@ g++ src/run.cpp -o run.exe -Iinclude -L. -lbehavior
 g++ secondFile.o firstFile.o -o program
 ~~~
 
-这是因为早期的链接器按照文件顺序解析符号，若在调用点之前未找到符号定义，就会报错。
 
 此外，在构建大型项目时，由于源文件之间存在复杂的依赖关系（例如头文件修改会影响多个 .cpp 文件），手动判断哪些文件需要重新编译几乎不可能。使用 g++ 时通常只能粗暴地全量重新编译：
 
@@ -298,16 +367,16 @@ g++ secondFile.o firstFile.o -o program
 //Win
 Measure-Command { g++ src/*.cpp -Iinclude -o run.exe }
 //Linux
-time g++ src/*.cpp -Iinclude -o run.exe
+time g++ src/*.cpp -Iinclude -o run
 ~~~
 
 这种方式虽简单，但随着项目体积增大，将极大影响构建效率。
+因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
+
 
 ### Makefile
 
-因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
 
-因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
 
 Makefile：经典的自动化构建系统
 Make 是 Unix 系统中最常用的构建工具之一。通过编写 Makefile，开发者可以精确描述各个目标文件的依赖关系和构建规则。当某个源文件发生变动时，make 只会重新编译受影响的部分，而不是整个项目。
@@ -465,7 +534,7 @@ Windows 原生环境常用的生成器是 Visual Studio。
 
 ## 作业
 
-还没想好（
+见 assignment/hw.md
 
 ## 参考资料
 
