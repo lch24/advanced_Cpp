@@ -2,3 +2,5 @@
 *.i
 *.exe
 *.o
+build
+dummies

@@ -11,9 +11,11 @@ bool execAction()
     if(bestMove==Action::attack)
     {
         std::cout<<"Defect is attacking!"<<std::endl;
+        std::cout<<"Defect is attacking!"<<std::endl;
     }
     else if(bestMove==Action::defent)
     {
+        std::cout<<"Defect is defentfing!"<<std::endl;
         std::cout<<"Defect is defentfing!"<<std::endl;
     }
     else

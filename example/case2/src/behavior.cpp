@@ -4,5 +4,5 @@
 
 void attack()
 {
-    std::cout<<"Defect is attacking!"<<std::endl;
+    std::cout<<"Defect is defending!"<<std::endl;
 }

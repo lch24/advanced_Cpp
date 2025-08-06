@@ -20,12 +20,12 @@
 
 - GCC（GNU Compiler Collection）：GCC 是由 GNU 开发的一套编译工具，支持多种语言。在本节课程中我们使用的编译工具就是 GCC（针对 C 的前端程序为 gcc，针对 C++ 的前端程序为 g++）
 
-在本节课程中，我们使用 wsl 作为运行环境，当然，Windows 的环境也是可以的，你可以通过一下的代码完成 gcc 的安装
+在本节课程中，我们使用 wsl 作为运行环境，当然，Windows 的环境也是可以的，你可以通过以下的代码完成 gcc 以及相关工具的安装
 
 Linux：
 ~~~bash
 sudo apt update
-sudo apt install build-essential
+sudo apt install build-essential cmake ninja-build
 ~~~
 
 Windows:
@@ -38,14 +38,15 @@ scoop bucket add main
 scoop bucket add extras
 
 scoop install gcc
+scoop install cmake
 ~~~
 
-当然，在 Windows 环境中你也可以直接到 [mingw](https://www.mingw-w64.org/downloads/) 的官网进行下载，并将 bin 目录添加到环境变量中。
+当然，在 Windows 环境中你也可以直接到 [mingw](https://www.mingw-w64.org/downloads/) 和[CMake](https://cmake.org/download/)的官网进行下载，并将 bin 目录添加到环境变量中。
 
 ### 预处理(Preprocessing)
 
 ```bash
-g++ -E main.cpp -o main.i
+g++ -E attack.cpp -o attack.i
 ```
 作用：
 
@@ -54,12 +55,12 @@ g++ -E main.cpp -o main.i
 
 输出：.i 文件（纯C++代码，无预处理指令）
 
-示例：../example/simplestCase
+示例：../example/case1
 
 ### 编译(Compiling)
 
 ~~~bash
-g++ -S main.i -o main.s
+g++ -S attack.i -o attack.s
 ~~~
 
 这一步是编译原理课的重要内容，在这里只进行一些简单的介绍。，
@@ -155,7 +156,7 @@ $S \to E, E \to aEb | \epsilon$
 ### 汇编
 
 ~~~bash
-g++ -c main.s -o main.o
+g++ -c attack.s -o attack.o
 ~~~
 
 汇编这一步将编译器生成的中间代码（汇编代码）翻译为机器码（一种包含机器指令的二进制格式文件），但尚未完成链接。
@@ -163,7 +164,7 @@ g++ -c main.s -o main.o
 .o 生成的文件不是人类可读的，但是如果你实在是好奇里面究竟有什么，可以在终端输入如下的指令：
 
 ~~~bash
-objdump -d test.o
+objdump -d attack.o
 ~~~
 
 它会把机器码进行反汇编，输出的格式应该类似于：
@@ -214,6 +215,8 @@ g++ main.o foo.o -o program
 
 链接将多个目标文件和库组织成一个完整的可执行文件或共享库。
 
+示例：../example/case2
+
 #### 静态链接
 
 ~~~bash
@@ -261,9 +264,21 @@ g++ main.cpp -L. -lmath -o main           # 链接动态库（运行时需要 li
 
 -fPIC 在 Linux 系统中用于生成可以在任意内存地址加载(位置无关代码)的共享库，对于 Windows系统不是必须的。
 
+#### ../example/case2 示例
+
+我们机器人的行为通过 behavior.h 头文件中的函数进行控制，通过动态链接，我们可以更新头文件，但是无需重新编译其它机器人的源代码。
+
+~~~bash
+# 编译动态库（Windows 下生成 .dll，Linux 下生成 .so）
+g++ -fPIC -shared src/behavior.cpp -o libbehavior.so   # Linux
+# 编译主程序并链接动态库
+g++ src/run.cpp -o run.exe -Iinclude -L. -lbehavior
+~~~
+
+
 ### 管理大型项目的构建：Makefile 与 Cmake
 
-#### 大型项目的构建
+## 大型项目的构建
 使用 g++ 构建项目时，在链接阶段 对源文件或目标文件的顺序有时有要求。例如，如果 firstFile.cpp 中定义了函数 foo，而 secondFile.cpp 中调用了该函数，那么链接命令中 firstFile.o 应出现在 secondFile.o 之后：
 ~~~bash
 g++ secondFile.o firstFile.o -o program
@@ -274,12 +289,18 @@ g++ secondFile.o firstFile.o -o program
 此外，在构建大型项目时，由于源文件之间存在复杂的依赖关系（例如头文件修改会影响多个 .cpp 文件），手动判断哪些文件需要重新编译几乎不可能。使用 g++ 时通常只能粗暴地全量重新编译：
 
 ~~~bash
-Measure-Command { g++ src/*.cpp -Iinclude -ftemplate-depth=11000 -o run.exe }
+// 下面的执行在../example/case3 下执行
+//创建一堆没有用的头文件，模拟大项目的高耗时
+./dummyCreator.sh
+//Win
+Measure-Command { g++ src/*.cpp -Iinclude -o run.exe }
+//Linux
+time g++ src/*.cpp -Iinclude -o run.exe
 ~~~
 
 这种方式虽简单，但随着项目体积增大，将极大影响构建效率。
 
-#### Makefile
+### Makefile
 
 因此，借助自动化构建工具如 Make 或 CMake，可以根据文件的修改时间自动判断依赖关系，只编译必要的文件，大幅缩短构建时间，提升开发效率。
 
@@ -325,4 +346,129 @@ clean:
 .PHONY: all clean
 ~~~
 
-#### CMake
+### CMake
+
+#### CMakelists.txt
+
+CMakeLists.txt 是 CMake 的核心配置文件，用于描述项目的构建规则和设置。每个 CMake 项目根目录下必须包含一个 CMakeLists.txt，子目录也可以包含各自的 CMakeLists.txt，用于模块化管理。
+
+##### 基本结构示例
+
+~~~cmake
+# 指定最低CMake版本要求
+cmake_minimum_required(VERSION 3.12)
+
+# 定义项目名称和使用语言
+project(DemoProject LANGUAGES CXX)
+
+# 设置C++标准
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 包含头文件目录
+include_directories(include)
+
+# 收集源文件
+file(GLOB SOURCES src/*.cpp)
+
+# 添加可执行文件目标
+add_executable(run ${SOURCES})
+
+# 添加编译选项（可选）
+target_compile_options(run PRIVATE -Wall -Wextra)
+~~~
+
+##### 分目录项目管理
+~~~cmake
+# 添加子目录，递归处理子目录中的CMakeLists.txt
+add_subdirectory(src)
+~~~
+
+##### 编译选项和宏定义
+
+~~~cmake
+target_compile_definitions(run PRIVATE DEBUG_MODE)
+target_compile_options(run PRIVATE -O2 -Wall)
+~~~
+
+##### 变量与条件判断
+
+~~~cmake
+if(WIN32)
+  message(STATUS "Building on Windows")
+elseif(UNIX)
+  message(STATUS "Building on Unix/Linux")
+endif()
+~~~
+
+##### 链接第三方库
+
+~~~cmake
+set(CMAKE_PREFIX_PATH "/path/to/custom/lib/cmake")
+find_package(SomeLib REQUIRED)
+target_link_libraries(run PRIVATE SomeLib::SomeLib)
+~~~
+
+
+
+#### 1. 使用 Unix Makefiles 生成器
+
+这是 CMake 默认在类 Unix 系统上的生成器。
+会生成传统的 Makefile 文件，使用 make 命令进行构建。
+适合习惯用 make 的用户，支持丰富的命令行参数。
+
+##### 典型流程
+
+在项目根目录执行：
+
+~~~bash
+cmake -G "Unix Makefiles" -S . -B build
+# 进入构建目录，执行构建
+make -C build
+# 运行程序
+./build/bin/run
+~~~
+
+
+#### 2. 使用 Ninja 生成器
+
+Ninja 是一个专门设计用于快速构建的小型构建系统。
+CMake 生成 build.ninja 文件，使用 ninja 命令构建。
+速度快，支持更细粒度的增量构建。
+
+##### 典型流程
+
+~~~bash
+# 生成 Ninja 构建文件
+cmake -G Ninja -S . -B build
+# 构建项目
+cmake --build build -- --quiet
+# 运行程序
+./build/bin/run
+~~~
+
+或者直接使用 ninja 命令：
+
+~~~bash
+ninja -C build --quiet
+~~~
+
+
+#### 3. 注意事项
+
+构建目录只能对应一种生成器，切换生成器前要清理旧构建目录或使用新目录。
+在 WSL 里可用的生成器还有 Ninja、Unix Makefiles 及其它（但最常用的是这两种）。
+Windows 原生环境常用的生成器是 Visual Studio。
+
+## 作业
+
+还没想好（
+
+## 参考资料
+
+- [往年暑培讲义](https://cloud.tsinghua.edu.cn/d/ca958715a8ea4e91a0ac/files/?p=%2F%E8%AE%B2%E4%B9%89%2F5_C%2B%2B%E8%BF%9B%E9%98%B6%E7%9F%A5%E8%AF%86%E4%BB%8B%E7%BB%8D.pdf)
+- [CMake 官方文档](https://cmake.org/documentation/)
+- [cmake-examples](https://github.com/ttroy50/cmake-examples) 该 GitHub 仓库中有很多开箱即用的 CMake 实例。
+- [为什么编译 c/c++要用 makefile，而不是直接用 shell 呢？](https://www.zhihu.com/question/461953861/answer/1914452432) 这篇博文详细地阐述了使用 makefile 的动机和意义（\xfgg/）。
+- [跟我一起写 Makefile](https://seisman.github.io/how-to-write-makefile/introduction.html) Makefile 教程。从中大家也可以看出 Makefile 的语法十分不友好...
+- [编译原理](https://zh.z-library.sk/book/5668399/1c0fd2/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6%E4%B8%9B%E4%B9%A6%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC2%E7%89%88.html)
