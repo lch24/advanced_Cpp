@@ -7,9 +7,19 @@
 ## 2.CMake 实现构建模式切换以及跨平台编译提示
 
 你需要实现两个功能：
-- 在构建项目的时候通过 -DCMAKE_BUILD_TYPE 参数实现 debug 模式和 release 模式。
-- 在构建过程中打印正在进行编译的环境是 Win 还是 Linux
+- 在构建项目的时候通过命令行参数实现 debug 模式和 release 模式。debug 模式需要打印 src/analyze.cpp 中的调试信息，release 模式则不打印信息。hint：考虑通过 option 自定义命令行参数。
+- 在构建过程中打印正在进行编译的环境是 Win 还是 Linux。
 
+chusi/CMakelists.txt 为你提供了一个简单的框架，你可以在此之上补全两个功能点
+
+要测试你的 CMakelists.txt 是否满足要求，你可以运行如下的指令：
+
+~~~bash
+//在 assignment 目录下
+cmake -S yourFolderName -B build
+cmake --build build
+./build/bin/run
+~~~
 
 ## 作业提交规范
 

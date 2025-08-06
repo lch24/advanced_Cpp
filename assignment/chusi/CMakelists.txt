@@ -16,15 +16,26 @@ target_compile_options(run PRIVATE
     -ftemplate-backtrace-limit=0
 )
 
-set_target_properties(run PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+# ----------answer
+option(ENABLE_DEBUG_MODEL " DEBUG_MODEL" OFF)
+
+if(ENABLE_DEBUG_MODEL)
+  target_compile_definitions(run PRIVATE DEBUG_MODEL)
+endif()
 
 if(WIN32)
   message(STATUS "Building on Windows")
 elseif(UNIX)
   message(STATUS "Building on Unix/Linux")
 endif()
+
+# ----------answer
+
+
+set_target_properties(run PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
 
 message(STATUS "源文件数量: ${SOURCES}")
 message(STATUS "生成可执行文件: run")

@@ -14,10 +14,16 @@ Action analyzeBestAction()
     int attackValue=distrib(gen); //随机给予攻击力
     std::cout<<"Defect is observing opponent's blood value..."<<std::endl;
     int bloodValue=observeOpponent();//观察对手的血量
+
+    //---------- code for homework
+    #ifdef DEBUG_MODEL
+    std::cout<<"bloodValue: "<<bloodValue<<std::endl;
+    std::cout<<"attackValue: "<<attackValue<<std::endl;
+    #endif
+    //----------
+
     if(attackValue>=bloodValue)//判断是否执行攻击
         return Action::attack;
 
     return Action::defent;
-
-
 }
