@@ -1,5 +1,8 @@
 # C++ 进阶知识
 
+建议大家到 Github clone 最新的[项目仓库( master 分支)](https://github.com/Chusi-Truth/advanced_Cpp)，里面有最新的讲义和示例项目。本次课程会有比较多的实操，因此 clone 仓库后在课上同步进行操作是个不错的选择。
+
+
 ## 从源代码到可执行文件
 
 ### 一个 C++ 程序究竟是怎么跑起来的
