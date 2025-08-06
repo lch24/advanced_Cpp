@@ -1,0 +1,38 @@
+# 最低 CMake 版本要求
+cmake_minimum_required(VERSION 3.12)
+
+# 项目名称与语言
+project(DemoProject LANGUAGES CXX)
+
+# 设置 C++ 标准
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 包含头文件路径
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# 收集源文件
+file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+
+# 添加可执行文件
+add_executable(run ${SOURCES})
+
+# 添加编译选项（可视需要调整）
+target_compile_options(run PRIVATE
+    -ftemplate-depth=11000
+    -ftemplate-backtrace-limit=0
+)
+
+# 可选：设置输出目录（保持项目整洁）
+set_target_properties(run PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+if(WIN32)
+  message(STATUS "Building on Windows")
+elseif(UNIX)
+  message(STATUS "Building on Unix/Linux")
+endif()
+
+# 可选：打印构建信息
+message(STATUS "源文件数量: ${SOURCES}")
+message(STATUS "生成可执行文件: run")
