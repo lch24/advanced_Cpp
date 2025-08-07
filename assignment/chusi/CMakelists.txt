@@ -11,15 +11,26 @@ file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/../hw_proj/src/*.cpp)
 
 add_executable(run ${SOURCES})
 
+# ----------todo: 调试模式以及编译提示
+# 添加DEBUG模式控制选项
+option(USE_DEBUG "Enable debug mode" OFF)
+
+# 打印操作系统环境信息
+message(STATUS "Compiling environment: ${CMAKE_SYSTEM_NAME}")
+
+# 添加编译选项，debug模式下定义DEBUG宏
+if(USE_DEBUG)
+    target_compile_definitions(run PRIVATE DEBUG)
+    message(STATUS "Debug mode enabled")
+else()
+    message(STATUS "Release mode enabled")
+endif()
+# ----------
+
 target_compile_options(run PRIVATE
     -ftemplate-depth=11000
     -ftemplate-backtrace-limit=0
 )
-
-# ----------todo: 调试模式以及编译提示
-
-# ----------
-
 
 set_target_properties(run PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
